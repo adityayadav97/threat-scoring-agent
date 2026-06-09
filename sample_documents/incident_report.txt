@@ -1,0 +1,22 @@
+SECURITY INCIDENT REPORT - INTERNAL
+Date: 2026-06-08
+Reported by: SOC Tier 2 Analyst
+
+Summary:
+At 02:14 UTC, our SIEM flagged multiple failed SSH login attempts against the
+production bastion host (10.0.4.21) originating from the IP 185.220.101.34,
+a known Tor exit node. Within 6 minutes, a successful login occurred using the
+service account "svc-deploy", which had not authenticated interactively in 90
+days. Shortly after, the account ran a series of reconnaissance commands
+(whoami, netstat, cat /etc/passwd) and attempted to download a payload from
+hxxp://malicious-cdn[.]example/loader.sh using curl.
+
+Observations:
+- The svc-deploy account password had not been rotated since 2024.
+- Outbound traffic to the CDN domain was blocked by egress filtering.
+- No lateral movement to other hosts has been confirmed yet.
+- The CVE-2025-1234 vulnerability in the SSH daemon is present on this host.
+
+Impact:
+Potential unauthorized access to a production server. No data exfiltration
+confirmed at this time, but the host stores deployment credentials.

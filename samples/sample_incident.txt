@@ -1,0 +1,27 @@
+SECURITY INCIDENT REPORT - INTERNAL
+
+Date: 2026-06-08
+Reported by: SOC Tier-2 Analyst
+
+Summary:
+At 02:14 UTC, our EDR flagged repeated failed RDP login attempts against the
+finance jump host (10.42.7.19) from external IP 185.220.101.47. After ~3,000
+attempts the account "svc_backup" was successfully authenticated. Within 12
+minutes, the host initiated outbound connections to hxxps://exfil-node[.]xyz and
+transferred approximately 4.2 GB of data. A scheduled task named "WinDefendUpd"
+was created to re-establish the connection if killed. The file
+invoice_2026.pdf.exe was dropped in C:\Users\Public and matches the hash of a
+known Cobalt Strike beacon (CVE-2024-1234 exploited for privilege escalation).
+
+Observed indicators:
+- Source IP: 185.220.101.47 (Tor exit node)
+- Domain: exfil-node[.]xyz
+- Compromised account: svc_backup (service account, never used interactively)
+- Malware: invoice_2026.pdf.exe (Cobalt Strike beacon)
+- Persistence: scheduled task "WinDefendUpd"
+
+Impact:
+The finance jump host has access to the payments database and SWIFT messaging
+gateway. Data exfiltration of 4.2 GB strongly suggests sensitive financial
+records were taken. Lateral movement to the payments subnet is suspected but not
+yet confirmed.
