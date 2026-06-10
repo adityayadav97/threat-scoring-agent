@@ -6,7 +6,6 @@ individual agents can stay focused on prompting and domain logic.
 
 from __future__ import annotations
 
-import json
 import os
 from typing import Any
 
@@ -14,12 +13,14 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
+from ._common import LLMError, safe_json_loads
+
 load_dotenv()
 
 DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 
 
-class GeminiClientError(RuntimeError):
+class GeminiClientError(LLMError):
     """Raised when the Gemini API cannot be reached or returns bad data."""
 
 
@@ -50,7 +51,7 @@ class GeminiClient:
         )
         if not raw:
             raise GeminiClientError("Gemini returned an empty response.")
-        return _safe_json_loads(raw)
+        return safe_json_loads(raw)
 
     def _generate(
         self,
@@ -72,19 +73,3 @@ class GeminiClient:
         except Exception as exc:  # noqa: BLE001 - surface any SDK/transport error
             raise GeminiClientError(f"Gemini request failed: {exc}") from exc
         return getattr(response, "text", None)
-
-
-def _safe_json_loads(raw: str) -> dict[str, Any]:
-    """Parse JSON, tolerating markdown code fences the model may add."""
-    cleaned = raw.strip()
-    if cleaned.startswith("```"):
-        # Drop the opening fence (``` or ```json) and the trailing fence.
-        cleaned = cleaned.split("\n", 1)[-1]
-        if cleaned.rstrip().endswith("```"):
-            cleaned = cleaned.rstrip()[:-3]
-    try:
-        return json.loads(cleaned)
-    except json.JSONDecodeError as exc:
-        raise GeminiClientError(
-            f"Could not parse JSON from Gemini response: {exc}\nRaw: {raw[:500]}"
-        ) from exc

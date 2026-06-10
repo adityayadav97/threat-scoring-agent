@@ -12,7 +12,7 @@ import json
 import sys
 from pathlib import Path
 
-from agents.gemini_client import GeminiClient, GeminiClientError
+from agents._common import LLMError, build_client
 from agents.recommendation_agent import RecommendationAgent
 from agents.threat_scoring_agent import ThreatScoringAgent
 from utils.document_loader import extract_text
@@ -32,8 +32,8 @@ def main() -> int:
     text = extract_text(path.name, path.read_bytes())
 
     try:
-        client = GeminiClient()
-    except GeminiClientError as exc:
+        client = build_client()
+    except LLMError as exc:
         print(str(exc), file=sys.stderr)
         return 2
 

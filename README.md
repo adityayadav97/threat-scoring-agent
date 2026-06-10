@@ -1,7 +1,7 @@
 # 🛡️ Threat Intelligence Agents
 
-A two-agent threat-analysis system with a Streamlit dashboard, powered by the
-Google Gemini API.
+A two-agent threat-analysis system with a Streamlit dashboard. Works with
+**Groq** (recommended — free and fast) or **Google Gemini**.
 
 ```
 Upload Document
@@ -30,6 +30,8 @@ threat-intel-agents/
 ├── app.py                       # Streamlit dashboard
 ├── run_pipeline.py              # CLI runner (no UI)
 ├── agents/
+│   ├── _common.py               # shared errors, JSON parser, provider factory
+│   ├── groq_client.py           # Groq API wrapper (text + JSON)
 │   ├── gemini_client.py         # Gemini API wrapper (text + JSON)
 │   ├── threat_scoring_agent.py  # Agent 1
 │   └── recommendation_agent.py  # Agent 2
@@ -56,12 +58,16 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-3. Add your Gemini API key (get one at https://aistudio.google.com/app/apikey):
+3. Add an API key (Groq recommended — free at https://console.groq.com/keys):
 
 ```bash
 cp .env.example .env
-# then edit .env and set GEMINI_API_KEY=...
+# then edit .env and set GROQ_API_KEY=...
+# (or GEMINI_API_KEY=... to use Gemini instead)
 ```
+
+The app auto-detects the provider: if `GROQ_API_KEY` is set it uses Groq,
+otherwise it falls back to `GEMINI_API_KEY`.
 
 ## Run the dashboard
 
@@ -87,12 +93,13 @@ python run_pipeline.py sample_documents/incident_report.txt --out report.json
 | `key_entities`, `threat_indicators`, `evidence` | Gemini structured JSON |
 | Recommendations | Agent 2, conditioned on the threat report |
 
-The Gemini client requests `response_mime_type=application/json` so the agents
-get well-formed JSON, with a fallback parser that strips markdown code fences.
+Both clients request JSON-mode output so the agents get well-formed JSON, with
+a fallback parser that strips markdown code fences.
 
 ## Notes
 
 - Large documents are truncated to ~30k characters before analysis.
 - Supported uploads: `.txt`, `.md`, `.log`, `.csv`, `.pdf`, `.docx`.
-- Set `GEMINI_MODEL` in `.env` to use a different model (default `gemini-2.0-flash`).
+- Default models: Groq `llama-3.3-70b-versatile`, Gemini `gemini-2.0-flash`.
+  Override with `GROQ_MODEL` / `GEMINI_MODEL`.
 ```

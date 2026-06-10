@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 
 import streamlit as st
 
-from agents.gemini_client import GeminiClient, GeminiClientError
+from agents._common import LLMError, build_client
 from agents.recommendation_agent import RecommendationAgent
 from agents.threat_scoring_agent import ThreatScoringAgent
 from utils.document_loader import SUPPORTED_EXTENSIONS, extract_text
@@ -46,29 +46,35 @@ def _init_state() -> None:
         st.session_state.setdefault(key, value)
 
 
-def _resolve_api_key() -> str | None:
-    """Find the Gemini key from Streamlit secrets (cloud) or env/.env (local)."""
+def _secret(name: str) -> str | None:
+    """Read a value from Streamlit secrets (cloud) or env/.env (local)."""
     try:
-        if "GEMINI_API_KEY" in st.secrets:
-            return str(st.secrets["GEMINI_API_KEY"])
+        if name in st.secrets:
+            return str(st.secrets[name])
     except Exception:  # noqa: BLE001 - no secrets file configured locally
         pass
-    return os.getenv("GEMINI_API_KEY")
-
-
-def _resolve_model() -> str | None:
-    try:
-        if "GEMINI_MODEL" in st.secrets:
-            return str(st.secrets["GEMINI_MODEL"])
-    except Exception:  # noqa: BLE001
-        pass
-    return os.getenv("GEMINI_MODEL")
+    return os.getenv(name)
 
 
 @st.cache_resource(show_spinner=False)
-def get_client() -> GeminiClient:
-    """Create a single Gemini client for the session."""
-    return GeminiClient(api_key=_resolve_api_key(), model=_resolve_model())
+def get_client():
+    """Create the LLM client, preferring Groq, falling back to Gemini."""
+    groq_key = _secret("GROQ_API_KEY")
+    if groq_key:
+        return build_client(
+            api_key=groq_key, model=_secret("GROQ_MODEL"), provider="groq"
+        )
+
+    gemini_key = _secret("GEMINI_API_KEY")
+    if gemini_key:
+        return build_client(
+            api_key=gemini_key, model=_secret("GEMINI_MODEL"), provider="gemini"
+        )
+
+    raise LLMError(
+        "No API key found. Add GROQ_API_KEY (recommended, free at "
+        "https://console.groq.com/keys) or GEMINI_API_KEY to the app secrets."
+    )
 
 
 def build_full_report() -> dict:
@@ -252,7 +258,7 @@ def main() -> None:
 def _run_analysis() -> None:
     try:
         client = get_client()
-    except GeminiClientError as exc:
+    except LLMError as exc:
         st.error(str(exc))
         return
 

@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from .gemini_client import GeminiClient
+from ._common import build_client
 
 _PROMPT = """You are an incident-response and risk-management advisor. Based on the
 threat assessment below, produce a clear, prioritized action plan.
@@ -44,8 +44,8 @@ Guidance:
 class RecommendationAgent:
     """Generates an action plan from a threat report."""
 
-    def __init__(self, client: GeminiClient | None = None):
-        self.client = client or GeminiClient()
+    def __init__(self, client=None):
+        self.client = client or build_client()
 
     def recommend(self, threat_report: dict[str, Any]) -> dict[str, Any]:
         if not threat_report:

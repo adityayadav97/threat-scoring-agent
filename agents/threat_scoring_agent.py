@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .gemini_client import GeminiClient
+from ._common import build_client
 
 # Truncate very large documents so we stay within model context limits.
 MAX_DOC_CHARS = 30_000
@@ -62,8 +62,8 @@ DOCUMENT:
 class ThreatScoringAgent:
     """Produces a structured threat report from document text."""
 
-    def __init__(self, client: GeminiClient | None = None):
-        self.client = client or GeminiClient()
+    def __init__(self, client=None):
+        self.client = client or build_client()
 
     def analyze(self, document_text: str) -> dict[str, Any]:
         text = (document_text or "").strip()
